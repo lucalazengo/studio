@@ -12,7 +12,7 @@ export default {
       fontFamily: {
         body: ['Inter', 'sans-serif'],
         headline: ['Inter', 'sans-serif'],
-        code: ['monospace'],
+        code: ['"Source Code Pro"', 'monospace'],
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -65,6 +65,20 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
+        status: {
+          active: {
+            DEFAULT: 'hsl(var(--status-active-bg))',
+            foreground: 'hsl(var(--status-active-text))',
+          },
+          inactive: {
+            DEFAULT: 'hsl(var(--status-inactive-bg))',
+            foreground: 'hsl(var(--status-inactive-text))',
+          },
+          suspended: {
+            DEFAULT: 'hsl(var(--status-suspended-bg))',
+            foreground: 'hsl(var(--status-suspended-text))',
+          }
+        }
       },
       borderRadius: {
         lg: 'var(--radius)',

@@ -1,6 +1,6 @@
 # Employee Manager
 
-O **Employee Manager** é uma aplicação web moderna construída com Next.js e Firebase, projetada para simplificar o gerenciamento de funcionários. A plataforma permite cadastrar, visualizar e gerenciar informações de funcionários de forma centralizada e eficiente..
+O **Employee Manager** é uma aplicação web moderna construída com Next.js e Firebase, projetada para simplificar o gerenciamento de funcionários. A plataforma permite cadastrar, visualizar e gerenciar informações de funcionários de forma centralizada e eficiente...
 
 A interface é responsiva e intuitiva, utilizando componentes `shadcn/ui` e Tailwind CSS para um design limpo e profissional. A aplicação também incorpora funcionalidades de Inteligência Artificial com **Genkit** para validar as fotos dos funcionários no momento do cadastro.
 

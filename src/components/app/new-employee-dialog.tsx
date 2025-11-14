@@ -42,6 +42,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { PhotoUpload } from './photo-upload';
 import { useToast } from '@/hooks/use-toast';
+import { createEmployee } from '@/lib/employees';
 
 export function NewEmployeeDialog() {
   const [open, setOpen] = useState(false);
@@ -50,7 +51,10 @@ export function NewEmployeeDialog() {
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeSchema),
     defaultValues: {
+      id: 0, // Inicializa como 0 ou '' dependendo da preferência, o coerce trata
       name: '',
+      email: '',
+      bi_Nr: '',
       role: '',
       department: '',
       businessUnit: '',
@@ -60,13 +64,43 @@ export function NewEmployeeDialog() {
   });
 
   async function onSubmit(data: EmployeeFormValues) {
-    console.log(data);
-    toast({
-        title: "Funcionário Salvo!",
+    try {
+      const photoUrl = (form.getValues('photoUrl') as string | undefined) ?? null;
+      
+      // Mapeamento correto para as colunas do Supabase
+      await createEmployee({
+        // Campos Obrigatórios
+        id: data.id,
+        nome: data.name,       // name -> nome
+        email: data.email,
+        bi_Nr: data.bi_Nr,
+        
+        // Campos Opcionais (mapeando nomes diferentes)
+        departmento: data.department,    // department -> departmento
+        unidadeNegocio: data.businessUnit, // businessUnit -> unidadeNegocio
+        telefone: data.phone,            // phone -> telefone
+        
+        // Campos com mesmo nome
+        role: data.role,
+        status: data.status,
+        expiryDate: data.expiryDate,
+        photoUrl,
+      });
+      
+      toast({
+        title: 'Funcionário salvo!',
         description: `${data.name} foi adicionado com sucesso.`,
-    });
-    form.reset();
-    setOpen(false);
+      });
+      form.reset();
+      setOpen(false);
+    } catch (error) {
+      console.error('Erro ao salvar funcionário:', error);
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Não foi possível inserir o funcionário no Supabase.',
+        variant: 'destructive',
+      });
+    }
   }
 
   return (
@@ -81,140 +115,194 @@ export function NewEmployeeDialog() {
         <DialogHeader>
           <DialogTitle>Cadastrar Novo Funcionário</DialogTitle>
           <DialogDescription>
-            Preencha as informações abaixo para adicionar um novo funcionário ao
-            sistema.
+            Preencha as informações abaixo para adicionar um novo funcionário ao sistema.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6 py-4">
             <PhotoUpload />
+            
+            {/* Grid de Campos */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
+              
+              {/* ID (Matrícula) - NOVO */}
+              <FormField
+                control={form.control}
+                name="id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Matrícula (ID)</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="Ex: 102030" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
-                    <FormItem>
+                  <FormItem>
                     <FormLabel>Nome Completo</FormLabel>
                     <FormControl>
-                        <Input placeholder="Ex: Ana Silva" {...field} />
+                      <Input placeholder="Ex: Ana Silva" {...field} />
                     </FormControl>
                     <FormMessage />
-                    </FormItem>
+                  </FormItem>
                 )}
-                />
-                <FormField
+              />
+
+              {/* EMAIL - NOVO */}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="ana@empresa.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* DOCUMENTO (BI) - NOVO */}
+              <FormField
+                control={form.control}
+                name="bi_Nr"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nº Documento (BI/CPF)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="123.456.789" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
                 control={form.control}
                 name="role"
                 render={({ field }) => (
-                    <FormItem>
+                  <FormItem>
                     <FormLabel>Função</FormLabel>
                     <FormControl>
-                        <Input placeholder="Ex: Gerente de Vendas" {...field} />
+                      <Input placeholder="Ex: Gerente" {...field} />
                     </FormControl>
                     <FormMessage />
-                    </FormItem>
+                  </FormItem>
                 )}
-                />
-                <FormField
+              />
+
+              <FormField
                 control={form.control}
                 name="department"
                 render={({ field }) => (
-                    <FormItem>
+                  <FormItem>
                     <FormLabel>Departamento</FormLabel>
                     <FormControl>
-                        <Input placeholder="Ex: Vendas" {...field} />
+                      <Input placeholder="Ex: Vendas" {...field} />
                     </FormControl>
                     <FormMessage />
-                    </FormItem>
+                  </FormItem>
                 )}
-                />
-                <FormField
+              />
+
+              <FormField
                 control={form.control}
                 name="businessUnit"
                 render={({ field }) => (
-                    <FormItem>
+                  <FormItem>
                     <FormLabel>Unidade de Negócio</FormLabel>
                     <FormControl>
-                        <Input placeholder="Ex: Varejo" {...field} />
+                      <Input placeholder="Ex: Varejo" {...field} />
                     </FormControl>
                     <FormMessage />
-                    </FormItem>
+                  </FormItem>
                 )}
-                />
-                <FormField
+              />
+
+              <FormField
                 control={form.control}
                 name="phone"
                 render={({ field }) => (
-                    <FormItem>
+                  <FormItem>
                     <FormLabel>Telefone</FormLabel>
                     <FormControl>
-                        <Input placeholder="(11) 98765-4321" {...field} />
+                      <Input placeholder="(11) 99999-9999" {...field} />
                     </FormControl>
                     <FormMessage />
-                    </FormItem>
+                  </FormItem>
                 )}
-                />
-                <FormField
+              />
+
+              <FormField
                 control={form.control}
                 name="expiryDate"
                 render={({ field }) => (
-                    <FormItem className="flex flex-col pt-2">
-                    <FormLabel>Data de Validade do Crachá</FormLabel>
+                  <FormItem className="flex flex-col pt-2">
+                    <FormLabel>Validade do Crachá</FormLabel>
                     <Popover>
-                        <PopoverTrigger asChild>
+                      <PopoverTrigger asChild>
                         <FormControl>
-                            <Button
+                          <Button
                             variant={'outline'}
                             className={cn(
-                                'w-full pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground'
+                              'w-full pl-3 text-left font-normal',
+                              !field.value && 'text-muted-foreground'
                             )}
-                            >
+                          >
                             {field.value ? (
-                                format(field.value, 'PPP', { locale: ptBR })
+                              format(field.value, 'PPP', { locale: ptBR })
                             ) : (
-                                <span>Escolha uma data</span>
+                              <span>Escolha uma data</span>
                             )}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
+                          </Button>
                         </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) => date < new Date()}
-                            initialFocus
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) => date < new Date()}
+                          initialFocus
                         />
-                        </PopoverContent>
+                      </PopoverContent>
                     </Popover>
                     <FormMessage />
-                    </FormItem>
+                  </FormItem>
                 )}
-                />
-                <FormField
+              />
+
+              <FormField
                 control={form.control}
                 name="status"
                 render={({ field }) => (
-                    <FormItem className="md:pt-2">
+                  <FormItem className="md:pt-2">
                     <FormLabel>Status</FormLabel>
-                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Ativo">Ativo</SelectItem>
-                          <SelectItem value="Inativo">Inativo</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Ativo">Ativo</SelectItem>
+                        <SelectItem value="Inativo">Inativo</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
-                    </FormItem>
+                  </FormItem>
                 )}
-                />
+              />
             </div>
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancelar

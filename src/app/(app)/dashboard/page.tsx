@@ -1,10 +1,12 @@
 import { EmployeeTable } from '@/components/app/employee-table';
 import { NewEmployeeDialog } from '@/components/app/new-employee-dialog';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { employees } from '@/lib/data';
 import { Users, UserCheck, UserX, ShieldAlert } from 'lucide-react';
 
 export default function DashboardPage() {
+  // Nota: Em uma aplicação real conectada ao Supabase, você buscaria esses dados do banco
+  // ao invés de usar o array estático 'employees' para as contagens.
   const totalEmployees = employees.length;
   const activeEmployees = employees.filter((e) => e.status === 'Ativo').length;
   const inactiveEmployees = employees.filter((e) => e.status === 'Inativo').length;

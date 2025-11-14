@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'Employee Manager',
-  description: 'Manage your employees with ease.',
+  title: 'OkPass',
+  description: 'Sistema de Gerenciamente de Funcionários.',
 };
 
 export default function RootLayout({

@@ -18,14 +18,28 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { employees } from '@/lib/data';
 import type { Employee } from '@/types';
 import { MoreHorizontal, Edit, QrCode, ShieldAlert } from 'lucide-react';
 import { StatusBadge } from './status-badge';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { fetchEmployees, updateEmployeeStatus } from '@/lib/employees';
+import { useToast } from '@/hooks/use-toast';
 
-function EmployeeActions({ employee }: { employee: Employee }) {
+function EmployeeActions({ employee, onSuspended }: { employee: Employee; onSuspended: (updated: Employee) => void }) {
+  const { toast } = useToast();
+
+  async function handleSuspend() {
+    try {
+      await updateEmployeeStatus(employee.id, 'Suspenso');
+      toast({ title: 'Funcionário suspenso', description: `${employee.name} foi marcado como Suspenso.` });
+      onSuspended({ ...employee, status: 'Suspenso' });
+    } catch (error) {
+      console.error('Erro ao suspender funcionário:', error);
+      toast({ title: 'Erro ao suspender', description: 'Não foi possível atualizar o status.', variant: 'destructive' });
+    }
+  }
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -47,7 +61,7 @@ function EmployeeActions({ employee }: { employee: Employee }) {
             </DropdownMenuItem>
         </Link>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+        <DropdownMenuItem onClick={handleSuspend} className="text-destructive focus:text-destructive focus:bg-destructive/10">
           <ShieldAlert className="mr-2 h-4 w-4" />
           Suspender
         </DropdownMenuItem>
@@ -57,9 +71,38 @@ function EmployeeActions({ employee }: { employee: Employee }) {
 }
 
 export function EmployeeTable() {
+  const [items, setItems] = useState<Employee[] | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const data = await fetchEmployees();
+        if (mounted) setItems(data);
+      } catch (error) {
+        console.error('Erro ao carregar funcionários:', error);
+        toast({ title: 'Falha ao carregar', description: 'Não foi possível buscar os funcionários.', variant: 'destructive' });
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [toast]);
+
+  function handleSuspended(updated: Employee) {
+    setItems((prev) => (prev ? prev.map((e) => (e.id === updated.id ? updated : e)) : prev));
+  }
+
   return (
     <div className="rounded-lg border shadow-sm">
-      <Table>
+      {loading ? (
+        <div className="p-6 text-sm text-muted-foreground">Carregando funcionários...</div>
+      ) : (
+        <Table>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[80px]">Foto</TableHead>
@@ -71,7 +114,7 @@ export function EmployeeTable() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {employees.map((employee) => (
+          {(items ?? []).map((employee) => (
             <TableRow key={employee.id}>
               <TableCell>
                 <Avatar>
@@ -93,12 +136,13 @@ export function EmployeeTable() {
                 {format(new Date(employee.expiryDate), 'dd/MM/yyyy')}
               </TableCell>
               <TableCell className="text-right">
-                <EmployeeActions employee={employee} />
+                <EmployeeActions employee={employee} onSuspended={handleSuspended} />
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
-      </Table>
+        </Table>
+      )}
     </div>
   );
 }

@@ -1,66 +1,88 @@
 import { supabase } from '@/lib/supabase/client';
-// Assegure-se que o tipo 'Employee' está correto ou importe-o adequadamente
-import type { Employee } from '@/types'; 
+import type { Employee } from '@/types';
+import type { EmployeeFormValues } from './schemas';
 
-// --- FIX 1: NOME DA TABELA CORRIGIDO ---
+export type CreateEmployeeInput = EmployeeFormValues;
+
 export async function fetchEmployees(): Promise<Employee[]> {
   const { data, error } = await supabase
-    .from('Funcionarios') // ❌ 'employees' -> ✅ 'Funcionarios'
+    .from('funcionarios')
     .select('*')
-    // 💡 Bônus: Mudei a ordenação para 'nome' (coluna real)
-    .order('nome', { ascending: true }); 
+    .order('nome', { ascending: true });
+    
   if (error) throw error;
   return (data ?? []) as Employee[];
 }
 
-// --- FIX 2: NOME DA TABELA CORRIGIDO ---
-export async function updateEmployeeStatus(
-  // 💡 Bônus: Mudei para 'number' para ser consistente com o 'id' (bigint)
-  id: number, 
-  status: Employee['status']
-): Promise<void> {
-  const { error } = await supabase
-    .from('Funcionarios') // ❌ 'employees' -> ✅ 'Funcionarios'
-    .update({ status })
-    .eq('id', id);
-  if (error) throw error;
-}
-
-// --- FIX 3: TIPO DE INPUT E FUNÇÃO CORRIGIDOS ---
-
-// Este tipo agora reflete o objeto que o 'new-employee-dialog.tsx'
-// está enviando, que são os nomes das colunas do banco.
-export type CreateEmployeeInput = {
-  id: number;
-  nome: string;
-  email: string;
-  bi_Nr: string;
-  role?: string | null;
-  departmento?: string | null; // <-- Nome da coluna do banco
-  unidadeNegocio?: string | null; // <-- Nome da coluna do banco
-  telefone?: string | null; // <-- Nome da coluna do banco
-  status?: 'Ativo' | 'Inativo'; // O schema trata 'Suspenso' se necessário
-  expiryDate?: Date | string | null; // Aceita Date ou string
-  photoUrl?: string | null;
-  photoHint?: string | null;
-};
-
+// FUNÇÃO DE CRIAÇÃO (Já existe)
 export async function createEmployee(input: CreateEmployeeInput) {
-  // O 'input' que vem do 'new-employee-dialog.tsx'
-  // já está no formato do banco (ex: { nome: '...', departmento: '...' })
-  // Não precisamos da variável 'payload' nem de mapeamento duplicado.
-
   const { data, error } = await supabase
-    .from('Funcionarios') // ❌ 'employees' -> ✅ 'Funcionarios'
-    .insert(input)        // ✅ Passa o objeto 'input' diretamente
+    .from('funcionarios')
+    .insert(input)
     .select('*')
     .single();
     
   if (error) {
-    // Log do erro real para facilitar o debug
     console.error('Erro detalhado do Supabase:', error);
     throw error;
   }
   
   return data as unknown as Employee;
+}
+
+// --- ⬇️ NOVAS FUNÇÕES AQUI ⬇️ ---
+
+/**
+ * ATUALIZA um funcionário completo com novos dados.
+ * 'input' deve ser do tipo EmployeeFormValues (do schema).
+ */
+export async function updateEmployee(id: number, input: EmployeeFormValues) {
+  const { data, error } = await supabase
+    .from('funcionarios')
+    .update(input)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Erro ao atualizar funcionário:', error);
+    throw error;
+  }
+
+  return data as unknown as Employee;
+}
+
+/**
+ * ATUALIZA apenas o status de um funcionário.
+ * (Usado para "Desativar" / "Reativar")
+ */
+export async function updateEmployeeStatus(
+  id: number,
+  status: Employee['status']
+): Promise<void> {
+  const { error } = await supabase
+    .from('funcionarios')
+    .update({ status })
+    .eq('id', id);
+    
+  if (error) {
+    console.error('Erro ao atualizar status:', error);
+    throw error;
+  }
+}
+
+/**
+ * DELETA permanentemente um funcionário.
+ * (Cuidado ao usar! "Desativar" é mais seguro.)
+ */
+export async function deleteEmployee(id: number): Promise<void> {
+  const { error } = await supabase
+    .from('funcionarios')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Erro ao deletar funcionário:', error);
+    throw error;
+  }
 }

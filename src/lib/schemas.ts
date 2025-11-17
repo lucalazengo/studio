@@ -1,41 +1,34 @@
 import { z } from 'zod';
 
+// Este schema valida o *formulário* de novo funcionário
 export const employeeSchema = z.object({
-  // --- CAMPOS OBRIGATÓRIOS (is_nullable: NO no Supabase) ---
+  // ID foi removido. O banco de dados cuida disso.
   
-  // 'nome' no banco
-  name: z.string().min(2, 'O nome completo é obrigatório.'),
-
-  // 'id' no banco (convertendo string do input para number)
-  id: z.coerce
-    .number({
-      required_error: 'A Matrícula (ID) é obrigatória.',
-      invalid_type_error: 'A Matrícula deve ser um número.',
-    })
-    .min(1, 'A Matrícula é obrigatória.'),
-
-  // 'email' no banco
+  nome: z.string().min(2, 'O nome completo é obrigatório.'),
+  
   email: z
     .string({ required_error: 'O email é obrigatório.' })
     .email('Formato de email inválido.'),
-
-  // 'bi_Nr' no banco
-  bi_Nr: z
+  
+  // Nome da coluna no banco: bi_nr
+  bi_nr: z
     .string({ required_error: 'O Nº do Documento é obrigatório.' })
     .min(3, 'O Nº do Documento é obrigatório.'),
 
-  // --- CAMPOS OPCIONAIS (is_nullable: YES no Supabase) ---
-  
+  // Campos opcionais
   role: z.string().optional(),
-  department: z.string().optional(),
-  businessUnit: z.string().optional(),
-  phone: z.string().optional(),
+  departmento: z.string().optional(),
   
-  expiryDate: z.date().optional(),
+  // Nome da coluna no banco: unidade_negocio
+  unidade_negocio: z.string().optional(),
+  telefone: z.string().optional(),
+  
+  // Nome da coluna no banco: expiry_date
+  expiry_date: z.date().optional().nullable(),
   
   status: z.enum(['Ativo', 'Inativo']).default('Ativo'),
   
-  photoUrl: z.string().optional().nullable(),
+  photo_url: z.string().optional().nullable(),
 });
 
 export type EmployeeFormValues = z.infer<typeof employeeSchema>;

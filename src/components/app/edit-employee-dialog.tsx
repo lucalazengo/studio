@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -37,81 +36,89 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { employeeSchema, type EmployeeFormValues } from '@/lib/schemas';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Plus } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { PhotoUpload } from './photo-upload';
 import { useToast } from '@/hooks/use-toast';
-import { createEmployee } from '@/lib/employees';
+import { updateEmployee } from '@/lib/employees'; // ✅ ATUALIZADO
+import { Employee } from '@/types';
+import { useRouter } from 'next/navigation';
 
-export function NewEmployeeDialog() {
-  const [open, setOpen] = useState(false);
+// --- Interface de Props ---
+interface EditEmployeeDialogProps {
+  employee: Employee; // Recebe o funcionário para editar
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function EditEmployeeDialog({
+  employee,
+  open,
+  onOpenChange,
+}: EditEmployeeDialogProps) {
   const { toast } = useToast();
+  const router = useRouter();
 
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeSchema),
+    // ✅ Ponto chave: Popula os valores padrão com os dados do funcionário
     defaultValues: {
-      nome: '',
-      email: '',
-      bi_nr: '',
-      role: '',
-      departmento: '',
-      unidade_negocio: '',
-      telefone: '',
-      status: 'Ativo',
-      expiry_date: null,
-      photo_url: null,
+      ...employee,
+      // Converte a data string do banco de volta para um objeto Date
+      expiry_date: employee.expiry_date ? new Date(employee.expiry_date) : null,
+      photo_url: employee.photo_url ?? null,
     },
   });
+  
+  // Reseta o formulário se o funcionário (prop) mudar
+  useEffect(() => {
+    form.reset({
+      ...employee,
+      expiry_date: employee.expiry_date ? new Date(employee.expiry_date) : null,
+      photo_url: employee.photo_url ?? null,
+    });
+  }, [employee, form]);
 
   async function onSubmit(data: EmployeeFormValues) {
     try {
-      const photoUrl = (form.getValues('photo_url') as string | undefined) ?? null;
-      await createEmployee({ ...data, photo_url: photoUrl });
+      await updateEmployee(employee.id, data); // ✅ Chama a função de UPDATE
 
       toast({
-        title: 'Funcionário salvo!',
-        description: `${data.nome} foi adicionado com sucesso.`,
+        title: 'Funcionário atualizado!',
+        description: `${data.nome} foi salvo com sucesso.`,
       });
-      form.reset();
-      setOpen(false);
+      router.refresh(); // ✅ Atualiza os dados da página (Server Component)
+      onOpenChange(false); // Fecha o modal
     } catch (error) {
-      console.error('Erro ao salvar funcionário:', error);
+      console.error('Erro ao atualizar funcionário:', error);
       toast({
         title: 'Erro ao salvar',
-        description: 'Não foi possível inserir o funcionário no Supabase.',
+        description: 'Não foi possível atualizar o funcionário.',
         variant: 'destructive',
       });
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Funcionário
-        </Button>
-      </DialogTrigger>
-
+    // Não usamos <DialogTrigger> aqui, pois ele é controlado pela tabela
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Cadastrar Novo Funcionário</DialogTitle>
+          <DialogTitle>Editar Funcionário</DialogTitle>
           <DialogDescription>
-            Preencha as informações abaixo para adicionar um novo funcionário.
-            A Matrícula (ID) será gerada automaticamente.
+            Altere as informações do funcionário abaixo.
           </DialogDescription>
         </DialogHeader>
-
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6 py-4">
             <PhotoUpload
               value={form.watch('photo_url')}
               onChange={(url) => form.setValue('photo_url', url)}
             />
-
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Nome */}
+              {/* Os campos do formulário são idênticos ao new-employee-dialog */}
               <FormField
                 control={form.control}
                 name="nome"
@@ -119,14 +126,12 @@ export function NewEmployeeDialog() {
                   <FormItem>
                     <FormLabel>Nome Completo</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Ana Silva" {...field} />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
-              {/* Email */}
               <FormField
                 control={form.control}
                 name="email"
@@ -134,14 +139,12 @@ export function NewEmployeeDialog() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="ana@empresa.com" {...field} />
+                      <Input type="email" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
-              {/* BI/CPF */}
               <FormField
                 control={form.control}
                 name="bi_nr"
@@ -149,14 +152,12 @@ export function NewEmployeeDialog() {
                   <FormItem>
                     <FormLabel>Nº Documento (BI/CPF)</FormLabel>
                     <FormControl>
-                      <Input placeholder="123.456.789-00" {...field} />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
-              {/* Função */}
               <FormField
                 control={form.control}
                 name="role"
@@ -164,14 +165,12 @@ export function NewEmployeeDialog() {
                   <FormItem>
                     <FormLabel>Função</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Gerente" {...field} />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
-              {/* Departamento */}
               <FormField
                 control={form.control}
                 name="departmento"
@@ -179,14 +178,12 @@ export function NewEmployeeDialog() {
                   <FormItem>
                     <FormLabel>Departamento</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Vendas" {...field} />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
-              {/* Unidade de Negócio */}
               <FormField
                 control={form.control}
                 name="unidade_negocio"
@@ -194,14 +191,12 @@ export function NewEmployeeDialog() {
                   <FormItem>
                     <FormLabel>Unidade de Negócio</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Varejo" {...field} />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
-              {/* Telefone */}
               <FormField
                 control={form.control}
                 name="telefone"
@@ -209,14 +204,12 @@ export function NewEmployeeDialog() {
                   <FormItem>
                     <FormLabel>Telefone</FormLabel>
                     <FormControl>
-                      <Input placeholder="(11) 99999-9999" {...field} />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
-              {/* Validade do crachá */}
               <FormField
                 control={form.control}
                 name="expiry_date"
@@ -227,7 +220,7 @@ export function NewEmployeeDialog() {
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
-                            variant="outline"
+                            variant={'outline'}
                             className={cn(
                               'w-full pl-3 text-left font-normal',
                               !field.value && 'text-muted-foreground'
@@ -256,15 +249,16 @@ export function NewEmployeeDialog() {
                   </FormItem>
                 )}
               />
-
-              {/* Status */}
               <FormField
                 control={form.control}
                 name="status"
                 render={({ field }) => (
                   <FormItem className="md:pt-2">
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione" />
@@ -273,6 +267,7 @@ export function NewEmployeeDialog() {
                       <SelectContent>
                         <SelectItem value="Ativo">Ativo</SelectItem>
                         <SelectItem value="Inativo">Inativo</SelectItem>
+                        {/* Adicione 'Suspenso' se for um status válido */}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -282,10 +277,14 @@ export function NewEmployeeDialog() {
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit">Salvar Funcionário</Button>
+              <Button type="submit">Salvar Alterações</Button>
             </DialogFooter>
           </form>
         </Form>

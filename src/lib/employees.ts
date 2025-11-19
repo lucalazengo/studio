@@ -14,7 +14,6 @@ export async function fetchEmployees(): Promise<Employee[]> {
   return (data ?? []) as Employee[];
 }
 
-// FUNÇÃO DE CRIAÇÃO (Já existe)
 export async function createEmployee(input: CreateEmployeeInput) {
   const { data, error } = await supabase
     .from('funcionarios')
@@ -30,59 +29,46 @@ export async function createEmployee(input: CreateEmployeeInput) {
   return data as unknown as Employee;
 }
 
-// --- ⬇️ NOVAS FUNÇÕES AQUI ⬇️ ---
+// --- ARQUIVO ATUALIZADO AQUI ---
 
 /**
- * ATUALIZA um funcionário completo com novos dados.
- * 'input' deve ser do tipo EmployeeFormValues (do schema).
+ * ATUALIZA um funcionário completo.
+ * ✅ Retorna o funcionário atualizado.
  */
-export async function updateEmployee(id: number, input: EmployeeFormValues) {
+export async function updateEmployee(id: number, input: EmployeeFormValues): Promise<Employee> {
   const { data, error } = await supabase
     .from('funcionarios')
     .update(input)
     .eq('id', id)
     .select()
-    .single();
+    .single(); // Garante que o registro atualizado seja retornado
 
   if (error) {
     console.error('Erro ao atualizar funcionário:', error);
     throw error;
   }
 
-  return data as unknown as Employee;
+  return data as Employee;
 }
 
 /**
  * ATUALIZA apenas o status de um funcionário.
- * (Usado para "Desativar" / "Reativar")
+ * ✅ Retorna o funcionário atualizado.
  */
 export async function updateEmployeeStatus(
   id: number,
   status: Employee['status']
-): Promise<void> {
-  const { error } = await supabase
+): Promise<Employee> {
+  const { data, error } = await supabase
     .from('funcionarios')
     .update({ status })
-    .eq('id', id);
+    .eq('id', id)
+    .select()
+    .single(); // Garante que o registro atualizado seja retornado
     
   if (error) {
     console.error('Erro ao atualizar status:', error);
     throw error;
   }
-}
-
-/**
- * DELETA permanentemente um funcionário.
- * (Cuidado ao usar! "Desativar" é mais seguro.)
- */
-export async function deleteEmployee(id: number): Promise<void> {
-  const { error } = await supabase
-    .from('funcionarios')
-    .delete()
-    .eq('id', id);
-
-  if (error) {
-    console.error('Erro ao deletar funcionário:', error);
-    throw error;
-  }
+  return data as Employee;
 }

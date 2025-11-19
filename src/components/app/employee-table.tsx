@@ -26,9 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
+  // DialogContent removido daqui pois usamos o PrintableCrachaModal
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -42,74 +40,72 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { MoreHorizontal } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
 import { useToast } from '@/hooks/use-toast';
 import { Employee } from '@/types';
 import { createCracha } from '@/lib/crachas';
-import { updateEmployeeStatus } from '@/lib/employees'; // Importação corrigida
+import { updateEmployeeStatus } from '@/lib/employees';
 import { Badge } from '@/components/ui/badge';
-import { EditEmployeeDialog } from './edit-employee-dialog';
+import { PrintableCrachaModal } from './printable-cracha-modal'; // Modal atualizado
 
 interface EmployeeTableProps {
   employees: Employee[];
+  onEditEmployee: (employee: Employee) => void;
+  onToggleStatus: (employee: Employee) => void;
 }
 
-export function EmployeeTable({ employees }: EmployeeTableProps) {
+export function EmployeeTable({ 
+  employees, 
+  onEditEmployee, 
+  onToggleStatus 
+}: EmployeeTableProps) {
   const { toast } = useToast();
   const router = useRouter();
 
-  /* ---------- Estados ---------- */
+  // --- Estados ---
   const [qrCodeValue, setQrCodeValue] = useState<string | null>(null);
   const [selectedEmployeeQR, setSelectedEmployeeQR] = useState<Employee | null>(null);
+  const [currentCrachaId, setCurrentCrachaId] = useState<string | null>(null); // ✅ ID do Crachá
 
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isDeactivateOpen, setIsDeactivateOpen] = useState(false);
-  const [employeeToEdit, setEmployeeToEdit] = useState<Employee | null>(null);
-  const [employeeToDeactivate, setEmployeeToDeactivate] = useState<Employee | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [employeeToToggle, setEmployeeToToggle] = useState<Employee | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  /* ---------- Handlers ---------- */
+  // --- Handlers ---
   const handleGenerateCracha = async (employee: Employee) => {
     setIsLoading(true);
     setSelectedEmployeeQR(employee);
+    
     try {
       const cracha = await createCracha(employee.id);
-      if (cracha?.id) {
+      if (cracha && cracha.id) {
+        // Salva o ID para passar ao modal de impressão
+        setCurrentCrachaId(cracha.id);
+        
         const validationUrl = `${window.location.origin}/validar/${cracha.id}`;
         setQrCodeValue(validationUrl);
       } else {
         toast({ title: 'Erro', description: 'Não foi possível gerar o crachá.', variant: 'destructive' });
       }
-    } catch {
+    } catch (error) {
+      console.error(error);
       toast({ title: 'Erro', description: 'Ocorreu um problema ao gerar o crachá.', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleOpenEditDialog = (employee: Employee) => {
-    setEmployeeToEdit(employee);
-    setIsEditOpen(true);
+  const handleOpenConfirmDialog = (employee: Employee) => {
+    setEmployeeToToggle(employee);
+    setIsConfirmOpen(true);
   };
 
-  const handleOpenDeactivateDialog = (employee: Employee) => {
-    setEmployeeToDeactivate(employee);
-    setIsDeactivateOpen(true);
+  const handleConfirmToggle = async () => {
+    if (!employeeToToggle) return;
+    onToggleStatus(employeeToToggle);
+    setIsConfirmOpen(false);
   };
 
-  const handleDeactivateEmployee = async () => {
-    if (!employeeToDeactivate) return;
-    try {
-      await updateEmployeeStatus(employeeToDeactivate.id, 'Inativo');
-      toast({ title: 'Funcionário Desativado', description: `${employeeToDeactivate.nome} foi marcado como inativo.` });
-      router.refresh();
-      setIsDeactivateOpen(false);
-    } catch {
-      toast({ title: 'Erro', description: 'Não foi possível desativar o funcionário.', variant: 'destructive' });
-    }
-  };
-
-  /* ---------- Colunas ---------- */
+  // --- Colunas ---
   const columns: ColumnDef<Employee>[] = [
     {
       accessorKey: 'nome',
@@ -142,6 +138,8 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
       id: 'actions',
       cell: ({ row }) => {
         const emp = row.original;
+        const isAtivo = emp.status === 'Ativo';
+        
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -155,12 +153,10 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
               <DropdownMenuItem onClick={() => handleGenerateCracha(emp)} disabled={isLoading}>
                 {isLoading ? 'Gerando...' : 'Gerar Crachá (QR Code)'}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleOpenEditDialog(emp)}>Editar Funcionário</DropdownMenuItem>
-              {emp.status === 'Ativo' && (
-                <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeactivateDialog(emp)}>
-                  Desativar
-                </DropdownMenuItem>
-              )}
+              <DropdownMenuItem onClick={() => onEditEmployee(emp)}>Editar Funcionário</DropdownMenuItem>
+              <DropdownMenuItem className={!isAtivo ? "text-green-600" : "text-destructive"} onClick={() => handleOpenConfirmDialog(emp)}>
+                {isAtivo ? 'Desativar' : 'Ativar'}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -169,8 +165,11 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
   ];
 
   const table = useReactTable({ data: employees, columns, getCoreRowModel: getCoreRowModel() });
+  
+  const confirmDescription = employeeToToggle?.status === 'Ativo'
+    ? `Isso marcará ${employeeToToggle?.nome} como "Inativo".`
+    : `Isso marcará ${employeeToToggle?.nome} como "Ativo".`;
 
-  /* ---------- Render ---------- */
   return (
     <>
       <div className="rounded-md border">
@@ -186,7 +185,6 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
               </TableRow>
             ))}
           </TableHeader>
-
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
@@ -207,41 +205,46 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
         </Table>
       </div>
 
-      {/* Modal QR Code */}
-      <Dialog open={!!qrCodeValue} onOpenChange={(o) => { if (!o) { setQrCodeValue(null); setSelectedEmployeeQR(null); } }}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Crachá de {selectedEmployeeQR?.nome}</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center justify-center py-4">
-            <div className="rounded-lg bg-white p-4">
-              {qrCodeValue && <QRCodeSVG value={qrCodeValue} size={256} includeMargin />}
-            </div>
-            <p className="mt-4 text-sm text-muted-foreground">Escaneie este código para validar o crachá.</p>
-            <p className="mt-2 text-xs text-muted-foreground break-all">URL: {qrCodeValue}</p>
-            <Button onClick={() => window.print()} className="mt-6">Imprimir</Button>
-          </div>
-        </DialogContent>
+      {/* ✅ Modal de Visualização do Crachá (usa o componente atualizado) */}
+      {/* Usamos o componente Dialog nativo apenas para controlar a montagem condicional */}
+      <Dialog 
+         open={!!qrCodeValue && !!selectedEmployeeQR && !!currentCrachaId} 
+         onOpenChange={(open) => {
+            if (!open) {
+              setQrCodeValue(null);
+              setSelectedEmployeeQR(null);
+              setCurrentCrachaId(null);
+            }
+         }}
+      >
+         {/* Renderizamos o conteúdo se tivermos todos os dados */}
+         {selectedEmployeeQR && qrCodeValue && currentCrachaId && (
+            <PrintableCrachaModal
+               employee={selectedEmployeeQR}
+               qrCodeUrl={qrCodeValue}
+               crachaId={currentCrachaId}
+               open={!!qrCodeValue}
+               onOpenChange={(val) => {
+                  if(!val) {
+                    setQrCodeValue(null);
+                    setSelectedEmployeeQR(null);
+                    setCurrentCrachaId(null);
+                  }
+               }}
+            />
+         )}
       </Dialog>
 
-      {/* Modal Editar */}
-      {employeeToEdit && (
-        <EditEmployeeDialog employee={employeeToEdit} open={isEditOpen} onOpenChange={setIsEditOpen} />
-      )}
-
       {/* Modal Confirmar Desativação */}
-      <AlertDialog open={isDeactivateOpen} onOpenChange={setIsDeactivateOpen}>
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {/* ✅ ERRO CORRIGIDO AQUI (removido o 'd' extra) */}
-              Isso marcará {employeeToDeactivate?.nome} como “Inativo”. Ele perderá o acesso temporariamente. Esta ação pode ser revertida (editando o status).
-            </AlertDialogDescription>
+            <AlertDialogDescription>{confirmDescription}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeactivateEmployee}>Confirmar Desativação</AlertDialogAction>
+            <AlertDialogAction onClick={handleConfirmToggle}>Confirmar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

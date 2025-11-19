@@ -56,7 +56,7 @@ export default function LoginPage() {
     <div className="flex flex-col items-center gap-4">
       <Link href="/" className="flex items-center gap-2 text-foreground">
         <Building2 className="h-6 w-6" />
-        <span className="text-xl font-semibold tracking-tight">Employee Manager</span>
+        <span className="text-xl font-semibold tracking-tight">OkPass</span>
       </Link>
       <Card className="w-full max-w-sm">
         <CardHeader>

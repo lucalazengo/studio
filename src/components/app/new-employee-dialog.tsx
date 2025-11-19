@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -17,32 +17,32 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from "@/components/ui/form";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Calendar } from '@/components/ui/calendar';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { employeeSchema, type EmployeeFormValues } from '@/lib/schemas';
-import { cn } from '@/lib/utils';
-import { CalendarIcon, Plus } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { PhotoUpload } from './photo-upload';
-import { useToast } from '@/hooks/use-toast';
-import { createEmployee } from '@/lib/employees';
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { employeeSchema, type EmployeeFormValues } from "@/lib/schemas";
+import { cn } from "@/lib/utils";
+import { CalendarIcon, Plus } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { PhotoUpload } from "./photo-upload";
+import { useToast } from "@/hooks/use-toast";
+import { createEmployee } from "@/lib/employees";
 
 export function NewEmployeeDialog() {
   const [open, setOpen] = useState(false);
@@ -51,14 +51,14 @@ export function NewEmployeeDialog() {
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeSchema),
     defaultValues: {
-      nome: '',
-      email: '',
-      bi_nr: '',
-      role: '',
-      departmento: '',
-      unidade_negocio: '',
-      telefone: '',
-      status: 'Ativo',
+      nome: "",
+      email: "",
+      bi_nr: "",
+      role: "",
+      departmento: "",
+      unidade_negocio: "",
+      telefone: "",
+      status: "Ativo",
       expiry_date: null,
       photo_url: null,
     },
@@ -66,21 +66,22 @@ export function NewEmployeeDialog() {
 
   async function onSubmit(data: EmployeeFormValues) {
     try {
-      const photoUrl = (form.getValues('photo_url') as string | undefined) ?? null;
+      const photoUrl =
+        (form.getValues("photo_url") as string | undefined) ?? null;
       await createEmployee({ ...data, photo_url: photoUrl });
 
       toast({
-        title: 'Funcionário salvo!',
+        title: "Funcionário salvo!",
         description: `${data.nome} foi adicionado com sucesso.`,
       });
       form.reset();
       setOpen(false);
     } catch (error) {
-      console.error('Erro ao salvar funcionário:', error);
+      console.error("Erro ao salvar funcionário:", error);
       toast({
-        title: 'Erro ao salvar',
-        description: 'Não foi possível inserir o funcionário no Supabase.',
-        variant: 'destructive',
+        title: "Erro ao salvar",
+        description: "Não foi possível inserir o funcionário no Supabase.",
+        variant: "destructive",
       });
     }
   }
@@ -98,16 +99,19 @@ export function NewEmployeeDialog() {
         <DialogHeader>
           <DialogTitle>Cadastrar Novo Funcionário</DialogTitle>
           <DialogDescription>
-            Preencha as informações abaixo para adicionar um novo funcionário.
-            A Matrícula (ID) será gerada automaticamente.
+            Preencha as informações abaixo para adicionar um novo funcionário. A
+            Matrícula (ID) será gerada automaticamente.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6 py-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="grid gap-6 py-4"
+          >
             <PhotoUpload
-              value={form.watch('photo_url')}
-              onChange={(url) => form.setValue('photo_url', url)}
+              value={form.watch("photo_url")}
+              onChange={(url) => form.setValue("photo_url", url)}
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -134,7 +138,11 @@ export function NewEmployeeDialog() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="ana@empresa.com" {...field} />
+                      <Input
+                        type="email"
+                        placeholder="ana@empresa.com"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -186,16 +194,28 @@ export function NewEmployeeDialog() {
                 )}
               />
 
-              {/* Unidade de Negócio */}
+              {/* Unidade de Negócio - SELECT CORRIGIDO */}
               <FormField
                 control={form.control}
                 name="unidade_negocio"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Unidade de Negócio</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: Varejo" {...field} />
-                    </FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a Unidade" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="RIKAUTO">RIKAUTO</SelectItem>
+                        <SelectItem value="GESGLOBAL">GESGLOBAL</SelectItem>
+                        <SelectItem value="ABRECOME">ABRECOME</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -229,12 +249,14 @@ export function NewEmployeeDialog() {
                           <Button
                             variant="outline"
                             className={cn(
-                              'w-full pl-3 text-left font-normal',
-                              !field.value && 'text-muted-foreground'
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
                             )}
                           >
                             {field.value ? (
-                              format(new Date(field.value), 'PPP', { locale: ptBR })
+                              format(new Date(field.value), "PPP", {
+                                locale: ptBR,
+                              })
                             ) : (
                               <span>Escolha uma data</span>
                             )}
@@ -245,9 +267,11 @@ export function NewEmployeeDialog() {
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
-                          selected={field.value ? new Date(field.value) : undefined}
+                          selected={
+                            field.value ? new Date(field.value) : undefined
+                          }
                           onSelect={field.onChange}
-                          disabled={(date) => date < new Date('1900-01-01')}
+                          disabled={(date) => date < new Date("1900-01-01")}
                           initialFocus
                         />
                       </PopoverContent>
@@ -264,7 +288,10 @@ export function NewEmployeeDialog() {
                 render={({ field }) => (
                   <FormItem className="md:pt-2">
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione" />
@@ -282,7 +309,11 @@ export function NewEmployeeDialog() {
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+              >
                 Cancelar
               </Button>
               <Button type="submit">Salvar Funcionário</Button>

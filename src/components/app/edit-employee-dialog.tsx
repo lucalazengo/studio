@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -16,62 +16,58 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from "@/components/ui/form";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Calendar } from '@/components/ui/calendar';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { employeeSchema, type EmployeeFormValues } from '@/lib/schemas';
-import { cn } from '@/lib/utils';
-import { CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { PhotoUpload } from './photo-upload';
-import { useToast } from '@/hooks/use-toast';
-import { updateEmployee } from '@/lib/employees'; // ✅ ATUALIZADO
-import { Employee } from '@/types';
-import { useRouter } from 'next/navigation';
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { employeeSchema, type EmployeeFormValues } from "@/lib/schemas";
+import { cn } from "@/lib/utils";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { PhotoUpload } from "./photo-upload";
+import { useToast } from "@/hooks/use-toast";
+import { updateEmployee } from "@/lib/employees";
+import { Employee } from "@/types";
 
-// --- Interface de Props ---
 interface EditEmployeeDialogProps {
-  employee: Employee; // Recebe o funcionário para editar
+  employee: Employee;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onEmployeeUpdated: (updatedEmployee: Employee) => void;
 }
 
 export function EditEmployeeDialog({
   employee,
   open,
   onOpenChange,
+  onEmployeeUpdated,
 }: EditEmployeeDialogProps) {
   const { toast } = useToast();
-  const router = useRouter();
 
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeSchema),
-    // ✅ Ponto chave: Popula os valores padrão com os dados do funcionário
     defaultValues: {
       ...employee,
-      // Converte a data string do banco de volta para um objeto Date
       expiry_date: employee.expiry_date ? new Date(employee.expiry_date) : null,
       photo_url: employee.photo_url ?? null,
     },
   });
-  
-  // Reseta o formulário se o funcionário (prop) mudar
+
   useEffect(() => {
     form.reset({
       ...employee,
@@ -82,26 +78,20 @@ export function EditEmployeeDialog({
 
   async function onSubmit(data: EmployeeFormValues) {
     try {
-      await updateEmployee(employee.id, data); // ✅ Chama a função de UPDATE
-
-      toast({
-        title: 'Funcionário atualizado!',
-        description: `${data.nome} foi salvo com sucesso.`,
-      });
-      router.refresh(); // ✅ Atualiza os dados da página (Server Component)
-      onOpenChange(false); // Fecha o modal
+      const updatedEmployee = await updateEmployee(employee.id, data);
+      onEmployeeUpdated(updatedEmployee);
+      onOpenChange(false);
     } catch (error) {
-      console.error('Erro ao atualizar funcionário:', error);
+      console.error("Erro ao atualizar funcionário:", error);
       toast({
-        title: 'Erro ao salvar',
-        description: 'Não foi possível atualizar o funcionário.',
-        variant: 'destructive',
+        title: "Erro ao salvar",
+        description: "Não foi possível atualizar o funcionário.",
+        variant: "destructive",
       });
     }
   }
 
   return (
-    // Não usamos <DialogTrigger> aqui, pois ele é controlado pela tabela
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -110,15 +100,19 @@ export function EditEmployeeDialog({
             Altere as informações do funcionário abaixo.
           </DialogDescription>
         </DialogHeader>
+
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6 py-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="grid gap-6 py-4"
+          >
             <PhotoUpload
-              value={form.watch('photo_url')}
-              onChange={(url) => form.setValue('photo_url', url)}
+              value={form.watch("photo_url")}
+              onChange={(url) => form.setValue("photo_url", url)}
             />
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Os campos do formulário são idênticos ao new-employee-dialog */}
+              {/* Nome Completo */}
               <FormField
                 control={form.control}
                 name="nome"
@@ -132,6 +126,8 @@ export function EditEmployeeDialog({
                   </FormItem>
                 )}
               />
+
+              {/* Email */}
               <FormField
                 control={form.control}
                 name="email"
@@ -145,6 +141,8 @@ export function EditEmployeeDialog({
                   </FormItem>
                 )}
               />
+
+              {/* Nº Documento */}
               <FormField
                 control={form.control}
                 name="bi_nr"
@@ -158,6 +156,8 @@ export function EditEmployeeDialog({
                   </FormItem>
                 )}
               />
+
+              {/* Função */}
               <FormField
                 control={form.control}
                 name="role"
@@ -171,6 +171,8 @@ export function EditEmployeeDialog({
                   </FormItem>
                 )}
               />
+
+              {/* Departamento */}
               <FormField
                 control={form.control}
                 name="departmento"
@@ -184,19 +186,35 @@ export function EditEmployeeDialog({
                   </FormItem>
                 )}
               />
+
+              {/* Unidade de Negócio - SELECT ATUALIZADO */}
               <FormField
                 control={form.control}
                 name="unidade_negocio"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Unidade de Negócio</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a Unidade" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="RIKAUTO">RIKAUTO</SelectItem>
+                        <SelectItem value="GESGLOBAL">GESGLOBAL</SelectItem>
+                        <SelectItem value="ABRECOME">ABRECOME</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {/* Telefone */}
               <FormField
                 control={form.control}
                 name="telefone"
@@ -210,6 +228,8 @@ export function EditEmployeeDialog({
                   </FormItem>
                 )}
               />
+
+              {/* Validade do Crachá */}
               <FormField
                 control={form.control}
                 name="expiry_date"
@@ -220,14 +240,16 @@ export function EditEmployeeDialog({
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
-                            variant={'outline'}
+                            variant="outline"
                             className={cn(
-                              'w-full pl-3 text-left font-normal',
-                              !field.value && 'text-muted-foreground'
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
                             )}
                           >
                             {field.value ? (
-                              format(new Date(field.value), 'PPP', { locale: ptBR })
+                              format(new Date(field.value), "PPP", {
+                                locale: ptBR,
+                              })
                             ) : (
                               <span>Escolha uma data</span>
                             )}
@@ -240,7 +262,7 @@ export function EditEmployeeDialog({
                           mode="single"
                           selected={field.value ? new Date(field.value) : undefined}
                           onSelect={field.onChange}
-                          disabled={(date) => date < new Date('1900-01-01')}
+                          disabled={(date) => date < new Date("1900-01-01")}
                           initialFocus
                         />
                       </PopoverContent>
@@ -249,6 +271,8 @@ export function EditEmployeeDialog({
                   </FormItem>
                 )}
               />
+
+              {/* Status */}
               <FormField
                 control={form.control}
                 name="status"
@@ -256,7 +280,7 @@ export function EditEmployeeDialog({
                   <FormItem className="md:pt-2">
                     <FormLabel>Status</FormLabel>
                     <Select
-                      onValueValueChange={field.onChange}
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -267,7 +291,6 @@ export function EditEmployeeDialog({
                       <SelectContent>
                         <SelectItem value="Ativo">Ativo</SelectItem>
                         <SelectItem value="Inativo">Inativo</SelectItem>
-                        {/* Adicione 'Suspenso' se for um status válido */}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -276,6 +299,7 @@ export function EditEmployeeDialog({
               />
             </div>
 
+            {/* Rodapé */}
             <DialogFooter>
               <Button
                 type="button"

@@ -1,113 +1,137 @@
 'use client';
 
-import { useState } from 'react';
-import { UploadCloud, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
-import { useFormContext } from 'react-hook-form';
-import Image from 'next/image';
-import { analyzePhotoAction } from '@/lib/actions';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { cn } from '@/lib/utils';
-import type { AnalyzeEmployeePhotoOutput } from '@/ai/flows/analyze-employee-photo';
+import { useState, useRef, ChangeEvent } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Camera, X, Loader2 } from 'lucide-react';
+import { uploadImage } from '@/lib/supabase/storage';
+import { useToast } from '@/hooks/use-toast';
 
-type AnalysisStatus = 'idle' | 'loading' | 'success' | 'error';
+interface PhotoUploadProps {
+  value: string | null;
+  onChange: (url: string | null) => void;
+  disabled?: boolean;
+}
 
-export function PhotoUpload() {
-  const { setValue } = useFormContext();
-  const [preview, setPreview] = useState<string | null>(null);
-  const [analysisStatus, setAnalysisStatus] = useState<AnalysisStatus>('idle');
-  const [analysisResult, setAnalysisResult] = useState<AnalyzeEmployeePhotoOutput | null>(null);
-  
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setAnalysisStatus('loading');
-      setAnalysisResult(null);
+export function PhotoUpload({ value, onChange, disabled }: PhotoUploadProps) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const dataUri = reader.result as string;
-        setPreview(dataUri);
-        
-        const result = await analyzePhotoAction(dataUri);
-        
-        if (result.success && result.data) {
-          const { analysisResult: photoAnalysis, feedback } = result.data;
-          setAnalysisResult(result.data);
-          if (
-            photoAnalysis.integrityCheck && 
-            photoAnalysis.meetsDimensionRequirements && 
-            photoAnalysis.meetsSizeRequirements &&
-            photoAnalysis.faceDetectionResult.faceDetected
-          ) {
-            setAnalysisStatus('success');
-            // Assuming successful upload and analysis gives a URL
-            // For now, just store the data URI for preview
-            setValue('photoUrl', dataUri);
-          } else {
-            setAnalysisStatus('error');
-          }
-        } else {
-          setAnalysisStatus('error');
-          setAnalysisResult({
-            analysisResult: {
-              integrityCheck: false,
-              meetsDimensionRequirements: false,
-              meetsSizeRequirements: false,
-              faceDetectionResult: { faceDetected: false, confidence: 0 }
-            },
-            feedback: result.error || 'An unknown error occurred during analysis.'
-          });
-        }
-      };
-      reader.readAsDataURL(file);
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    setError(null);
+    if (!event.target.files || event.target.files.length === 0) {
+      return;
+    }
+
+    const file = event.target.files[0];
+
+    // Validação de tipo e tamanho
+    if (!file.type.startsWith('image/')) {
+      setError('Por favor, selecione um arquivo de imagem (PNG, JPG, etc.).');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) { // 5MB
+      setError('A imagem é muito grande. O máximo é 5MB.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const imageUrl = await uploadImage(file); // Chama a função de upload
+      
+      onChange(imageUrl); // Atualiza o formulário com a nova URL
+      toast({
+        title: 'Foto carregada!',
+      });
+      
+    } catch (err: any) {
+      console.error('Erro ao fazer upload da imagem:', err);
+      // ✅ CORREÇÃO: Mostra o erro real do Supabase
+      const friendlyError = err.message.includes('Bucket not found')
+        ? 'Erro de configuração: Bucket não encontrado.'
+        : err.message;
+      setError(friendlyError);
+      
+      toast({
+        title: 'Erro no Upload',
+        description: friendlyError,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
-  const statusMap = {
-    loading: { icon: <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />, text: 'Analisando foto...' },
-    success: { icon: <CheckCircle className="h-8 w-8 text-green-500" />, text: 'Foto aprovada!' },
-    error: { icon: <AlertTriangle className="h-8 w-8 text-destructive" />, text: 'Problema na foto' },
-    idle: { icon: <UploadCloud className="h-8 w-8 text-muted-foreground" />, text: 'Clique para carregar ou arraste e solte' },
-  }
+  const handleRemovePhoto = () => {
+    // NOTA: Isso não deleta do bucket, apenas do formulário.
+    // Você pode adicionar a lógica de deleteImage(value) aqui se desejar.
+    onChange(null);
+    setError(null);
+  };
+
+  const handleClick = () => {
+    fileInputRef.current?.click();
+  };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className={cn(
-          "relative flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors",
-          analysisStatus === 'error' && 'border-destructive',
-          analysisStatus === 'success' && 'border-green-500',
-        )}>
-        {preview ? (
-            <Image src={preview} alt="Pré-visualização do funcionário" layout="fill" objectFit="contain" className="rounded-lg p-2" />
-        ) : (
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                {statusMap[analysisStatus].icon}
-                <p className="mb-2 text-sm text-muted-foreground text-center px-2">{statusMap[analysisStatus].text}</p>
-                <p className="text-xs text-muted-foreground">PNG, JPG, ou WEBP (MAX. 5MB)</p>
-            </div>
+    <div className="flex flex-col items-center gap-4 py-4">
+      {/* A prévia usa o Avatar, que já é circular (como no seu exemplo) */}
+      <Avatar className="h-32 w-32 border-2">
+        <AvatarImage 
+          src={value ?? undefined} 
+          alt="Foto do funcionário" 
+          className="object-cover" // Isso garante que a foto preencha o círculo
+        />
+        <AvatarFallback className="text-xl font-semibold">
+          <Camera className="h-12 w-12 text-muted-foreground" />
+        </AvatarFallback>
+      </Avatar>
+
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/png, image/jpeg, image/webp"
+        className="hidden"
+        disabled={disabled || loading}
+      />
+
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          onClick={handleClick}
+          disabled={disabled || loading}
+          variant="outline"
+        >
+          {loading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Camera className="mr-2 h-4 w-4" />
+          )}
+          {loading ? 'Enviando...' : 'Carregar Foto'}
+        </Button>
+        
+        {value && (
+          <Button
+            type="button"
+            onClick={handleRemovePhoto}
+            disabled={disabled || loading}
+            variant="ghost"
+          >
+            <X className="mr-2 h-4 w-4" /> Remover
+          </Button>
         )}
-        <input id="dropzone-file" type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" />
       </div>
 
-      {analysisStatus === 'error' && analysisResult && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Foto Rejeitada</AlertTitle>
-          <AlertDescription>
-            {analysisResult.feedback}
-          </AlertDescription>
-        </Alert>
+      {error && (
+        // ✅ A mensagem de erro agora é dinâmica
+        <p className="text-sm text-destructive mt-2 text-center">{error}</p>
       )}
-      {analysisStatus === 'success' && analysisResult && (
-         <Alert variant="default" className="border-green-500/50 text-green-700 dark:text-green-400">
-          <CheckCircle className="h-4 w-4 !text-green-500" />
-          <AlertTitle className="text-green-600 dark:text-green-500">Foto Aprovada</AlertTitle>
-          <AlertDescription>
-            {analysisResult.feedback}
-          </AlertDescription>
-        </Alert>
-      )}
-
     </div>
   );
 }

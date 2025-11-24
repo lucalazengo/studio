@@ -1,0 +1,10 @@
+{
+  "models": [
+    {
+      "title": "Gemini 3 Pro",
+      "provider": "gemini",
+      "model": "gemini-3.0-pro", 
+      "apiKey": "AIzaSyA0emULCFR1hd_yw7LLQZAiXKJb7nzbht0"
+    }
+  ]
+}

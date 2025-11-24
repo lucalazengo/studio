@@ -1,9 +1,11 @@
+// ... outros imports
 import { supabase } from '@/lib/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CheckCircle2, XCircle, AlertTriangle, User } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Image from 'next/image';
+import { ScanLogger } from '@/components/app/scan-logger'; // ✅ Importe o novo componente
 
 // Desativa o cache para validação em tempo real
 export const revalidate = 0;
@@ -20,7 +22,7 @@ export default async function ValidationPage({ params }: ValidationPageProps) {
   // Validação de UUID
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(crachaId)) {
-      return <InvalidState message="Código Inválido" />;
+    return <InvalidState message="Código Inválido" />;
   }
 
   // Busca dados
@@ -52,13 +54,17 @@ export default async function ValidationPage({ params }: ValidationPageProps) {
   } else if (expiryDate && expiryDate < now) {
     status = 'expired';
     statusText = 'CRACHÁ VENCIDO';
-    statusColor = 'text-red-500'; // Usando vermelho para vencido também, conforme imagem
+    statusColor = 'text-red-500';
     Icon = XCircle;
   }
 
   return (
     <main className="min-h-screen bg-white flex flex-col items-center justify-center p-6 font-sans">
       
+      {/* ✅ ADICIONE ISTO NO TOPO OU FINAL DO JSX */}
+      {/* Isso vai disparar o pedido de GPS assim que a página carregar */}
+      <ScanLogger crachaId={cracha.id} />
+
       {/* Logo (Opcional, se tiver em public/logo.png) */}
       {/* <div className="absolute top-8 left-8">
         <Image src="/logo.png" alt="Logo" width={100} height={40} className="object-contain" />

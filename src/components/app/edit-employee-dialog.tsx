@@ -148,7 +148,7 @@ export function EditEmployeeDialog({
                 name="bi_nr"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nº Documento (BI/CPF)</FormLabel>
+                    <FormLabel>Nº Documento (BI/Passport)</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>

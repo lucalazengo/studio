@@ -5,7 +5,9 @@ import { usePathname } from 'next/navigation';
 import {
   Bell,
   Home,
+  LifeBuoy,
   LineChart,
+  Map,
   Package,
   Package2,
   Settings,
@@ -21,19 +23,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { cn } from '@/lib/utils'; // Importe seu utilitário 'cn'
+import { cn } from '@/lib/utils';
 
-// Você pode remover este componente UserInfo se não tiver uma sessão
-// ou pode adaptá-lo para buscar o usuário logado
 function UserInfo() {
   return (
     <div className="mt-auto p-4">
       <Card>
         <CardHeader className="p-2 pt-0 md:p-4">
           <CardTitle>Admin</CardTitle>
-          <CardDescription>
-            admin@example.com
-          </CardDescription>
+          <CardDescription>admin@example.com</CardDescription>
         </CardHeader>
         <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
           <Button size="sm" variant="outline" className="w-full">
@@ -51,6 +49,8 @@ export function Sidebar() {
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
     { href: '/employees', label: 'Funcionários', icon: Users },
+    { href: '/map', label: 'Mapa de Acessos', icon: Map },
+    { href: '/support', label: 'Suporte', icon: LifeBuoy },
     { href: '/settings', label: 'Configurações', icon: Settings },
   ];
 
@@ -60,7 +60,7 @@ export function Sidebar() {
         <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
           <Link href="/" className="flex items-center gap-2 font-semibold">
             <Package2 className="h-6 w-6" />
-            <span className="">Employee Manager</span>
+            <span>Employee Manager</span>
           </Link>
         </div>
         <div className="flex-1">
@@ -71,7 +71,7 @@ export function Sidebar() {
                 href={item.href}
                 className={cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-                  pathname === item.href && 'bg-muted text-primary' // Destaca o link ativo
+                  pathname === item.href && 'bg-muted text-primary'
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -80,9 +80,7 @@ export function Sidebar() {
             ))}
           </nav>
         </div>
-        
-        {/* Informações do Usuário no rodapé da sidebar */}
-        {/* <UserInfo /> */}
+        <UserInfo />
       </div>
     </div>
   );

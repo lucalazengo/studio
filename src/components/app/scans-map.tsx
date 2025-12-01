@@ -85,10 +85,55 @@ export default function ScansMap({ logs }: ScansMapProps) {
   }, [logs]); // Recria apenas se os logs mudarem
 
   return (
-    <div 
-      // A ref é anexada aqui
-      ref={mapContainerRef} 
-      className="h-[600px] w-full rounded-xl overflow-hidden border border-gray-200 shadow-sm z-0 relative"
-    />
+    <div className="grid lg:grid-cols-[1fr_300px] h-[600px] gap-4">
+      {/* Mapa */}
+      <div 
+        ref={mapContainerRef} 
+        className="h-full w-full rounded-xl overflow-hidden border border-gray-200 shadow-sm z-0 relative"
+      />
+      
+      {/* Sidebar de Logs Recentes */}
+      <div className="h-full overflow-y-auto border rounded-xl p-4 bg-background shadow-sm">
+        <h3 className="font-semibold text-lg mb-4 sticky top-0 bg-background pb-2 border-b">
+          Últimos Acessos (48h)
+        </h3>
+        <div className="flex flex-col gap-3">
+          {logs.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Nenhum acesso registrado recentemente.
+            </p>
+          ) : (
+            logs.map((log) => (
+              <div key={log.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors border-b last:border-0">
+                 <div className="h-10 w-10 rounded-full overflow-hidden border bg-gray-100 shrink-0">
+                    {log.crachas?.funcionarios?.photo_url ? (
+                      <img 
+                        src={log.crachas.funcionarios.photo_url} 
+                        alt="Foto" 
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-xs font-bold text-gray-400">
+                        {log.crachas?.funcionarios?.nome?.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                 </div>
+                 <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate" title={log.crachas?.funcionarios?.nome}>
+                      {log.crachas?.funcionarios?.nome || 'Desconhecido'}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {log.crachas?.funcionarios?.role || 'Sem cargo'}
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-1">
+                      {format(new Date(log.scanned_at), "dd/MM HH:mm", { locale: ptBR })}
+                    </p>
+                 </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

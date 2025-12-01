@@ -37,6 +37,8 @@ export interface ScanLog {
         nome: string;
         role: string;
         photo_url: string | null;
+        departmento: string | null;
+        unidade_negocio: string | null;
       } | null;
     } | null;
   }
@@ -58,6 +60,11 @@ export interface ScanLog {
   }
   
   export async function fetchScanLogs(): Promise<ScanLog[]> {
+    // Calcula a data de 48 horas atrás
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setHours(twoDaysAgo.getHours() - 48);
+    const isoDate = twoDaysAgo.toISOString();
+
     const { data, error } = await supabase
       .from('scan_logs')
       .select(`
@@ -69,11 +76,14 @@ export interface ScanLog {
           funcionarios (
             nome,
             role,
-            photo_url
+            photo_url,
+            departmento,
+            unidade_negocio
           )
         )
       `)
       .not('latitude', 'is', null) // Só traz registros com GPS válido
+      .gte('scanned_at', isoDate) // Filtra por datas MAIORES ou IGUAIS a 48h atrás
       .order('scanned_at', { ascending: false })
       .limit(100); // Limita aos últimos 100 para não travar o mapa
   

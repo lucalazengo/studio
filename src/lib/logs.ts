@@ -40,6 +40,22 @@ export interface ScanLog {
       } | null;
     } | null;
   }
+
+  export interface FullScanLog {
+    id: number;
+    latitude: number | null;
+    longitude: number | null;
+    scanned_at: string;
+    user_agent: string | null;
+    crachas: {
+      funcionarios: {
+        nome: string;
+        role: string;
+        unidade_negocio: string | null;
+        departmento: string | null;
+      } | null;
+    } | null;
+  }
   
   export async function fetchScanLogs(): Promise<ScanLog[]> {
     const { data, error } = await supabase
@@ -67,4 +83,32 @@ export interface ScanLog {
     }
   
     return data as unknown as ScanLog[];
+  }
+
+  export async function fetchAllScanLogs(): Promise<FullScanLog[]> {
+    const { data, error } = await supabase
+      .from('scan_logs')
+      .select(`
+        id,
+        latitude,
+        longitude,
+        scanned_at,
+        user_agent,
+        crachas (
+          funcionarios (
+            nome,
+            role,
+            unidade_negocio,
+            departmento
+          )
+        )
+      `)
+      .order('scanned_at', { ascending: false });
+  
+    if (error) {
+      console.error('Erro ao buscar todos os logs:', error);
+      return [];
+    }
+  
+    return data as unknown as FullScanLog[];
   }

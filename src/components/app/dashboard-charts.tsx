@@ -49,11 +49,11 @@ export function DashboardCharts({ employees }: { employees: Employee[] }) {
   const unitData = transformDataForColorBars(employees);
   const statusData = getCountByStatus(employees);
   
-  // Cores: Ativo (Verde), Inativo (Vermelho)
+  // Cores: Ativo (Verde), Inativo (Vermelho/Rose)
   const statusColors = ['emerald', 'rose']; 
   
-  // Cores: RIKAUTO (Azul), GESGLOBAL (Roxo), ABRECOME (Laranja)
-  const unitColors = ['blue', 'violet', 'amber'];
+  // Cores: RIKAUTO (Verde), GESGLOBAL (Azul), ABRECOME (Laranja) - Matching theme
+  const unitColors = ['emerald', 'blue', 'amber'];
   const unitCategories = ['RIKAUTO', 'GESGLOBAL', 'ABRECOME'];
 
   return (
